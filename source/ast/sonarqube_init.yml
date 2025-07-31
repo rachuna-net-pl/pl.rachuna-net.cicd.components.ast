@@ -1,0 +1,14 @@
+---
+.ast:sonarqube-init:
+  - |
+    echo ""
+    echo -e "\033[1;33m===>\033[0m 🔗 SonarQube init"
+
+    sonar-scanner --version
+
+    if [ -z "$SONAR_PROJECT_NAME" ]; then
+      SONAR_PROJECT_NAME=${CI_PROJECT_PATH#pl.rachuna-net/}
+    fi
+    if [ -z "$SONAR_PROJECT_DESCRIPTION" ]; then
+      SONAR_PROJECT_DESCRIPTION=$CI_PROJECT_DESCRIPTION
+    fi
