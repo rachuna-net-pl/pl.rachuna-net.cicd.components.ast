@@ -5,6 +5,7 @@
 
 Komponent do przygotowania procesu CI/CD.
 
+* [sonarqube](docs/sonarqube.md)
 * [trivy](docs/trivy.md)
 
 ---
