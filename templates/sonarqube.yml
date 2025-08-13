@@ -1,0 +1,81 @@
+---
+spec:
+  inputs:
+    docker_image:
+      default: "registry.gitlab.com/pl.rachuna-net/containers/sonar-scanner:2.1.0"
+      description: "Set docker image to use for the sonar-scanner"
+    logo_url:
+      default: https://gitlab.com/pl.rachuna-net/cicd/gitlab-ci/-/raw/main/_configs/_logo?ref_type=heads
+      description: "Set logo url"
+    sonar_user_home:
+      default: "${CI_PROJECT_DIR}/.sonar"
+      description: "The sonar user home directory"
+    sonar_host_url:
+      default: "https://sonarcloud.io"
+      description: "The sonar host url"
+    sonar_organization:
+      default: "pl-rachuna-net"
+      description: "The sonar organization"
+    sonar_project_name:
+      default: ""
+      description: "The sonar project name"
+    sonar_project_key:
+      default: ""
+      description: "The sonar project key"
+    sonar_token:
+      default: ""
+      description: "The sonar token"
+    sonar_project_description:
+      default: ""
+      description: "The sonar project description"
+    sonar_project_version:
+      default: "1.0.0"
+      description: "The sonar project version"
+    sonar_sources:
+      default: "."
+      description: "The sonar sources"
+---
+variables:
+  CONTAINER_IMAGE_SONAR_SCANNER: $[[ inputs.docker_image ]]
+  LOGO_URL: $[[ inputs.logo_url ]]
+  SONAR_USER_HOME: "$[[ inputs.sonar_user_home ]]"
+  SONAR_HOST_URL: "$[[ inputs.sonar_host_url ]]"
+  SONAR_ORGANIZATION: "$[[ inputs.sonar_organization ]]"
+  SONAR_PROJECT_KEY: "$[[ inputs.sonar_project_key ]]"
+  SONAR_PROJECT_NAME: "$[[ inputs.sonar_project_name ]]"
+  SONAR_PROJECT_DESCRIPTION: "$[[ inputs.sonar_project_description ]]"
+  SONAR_PROJECT_VERSION: "$[[ inputs.sonar_project_version ]]"
+  SONAR_SOURCES: "$[[ inputs.sonar_sources ]]"
+  SONAR_TOKEN: "$[[ inputs.sonar_token ]]"
+  GIT_DEPTH: "0"
+
+
+include:
+  - local: /source/ast/_function_print_row.yml
+  - local: /source/ast/sonarqube_input_variables.yml
+  - local: /source/ast/sonarqube_init.yml
+
+
+💪 sonarqube scanner:
+  stage: sast
+  image: $CONTAINER_IMAGE_SONAR_SCANNER
+  before_script:
+    - |
+      git config --global --add safe.directory ${CI_PROJECT_DIR}
+      [ ! -z "${LOGO_URL}" ] && curl -s "${LOGO_URL}"
+    - !reference [.ast:_function_print_row]
+    - !reference [.ast:sonarqube_input_variables]
+    - !reference [.ast:sonarqube-init]
+  script:
+    - |
+      sonar-scanner \
+        -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
+        -Dsonar.organization="${SONAR_ORGANIZATION}" \
+        -Dsonar.projectName="${SONAR_PROJECT_NAME}" \
+        -Dsonar.projectDescription="${CI_PROJECT_DESCRIPTION}" \
+        -Dsonar.projectVersion="${SONAR_PROJECT_VERSION}" \
+        -Dsonar.sources="${SONAR_SOURCES}" \
+        -Dsonar.sourceEncoding=UTF-8 \
+        -Dsonar.token="${SONAR_TOKEN}"
+  rules:
+    - when: on_success

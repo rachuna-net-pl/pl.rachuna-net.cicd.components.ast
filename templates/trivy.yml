@@ -1,0 +1,46 @@
+---
+spec:
+  inputs:
+    docker_image:
+      default: registry.gitlab.com/pl.rachuna-net/containers/trivy:1.0.0
+      description: "Set contaiener image for the job"
+    logo_url:
+      default: https://gitlab.com/pl.rachuna-net/cicd/gitlab-ci/-/raw/main/_configs/_logo?ref_type=heads
+      description: "Set logo url"
+    container_to_analyze:
+      default: ""
+      description: "Set container to analyze"
+
+---
+variables:
+  CONTAINER_IMAGE_TRIVY: $[[ inputs.docker_image ]]
+  LOGO_URL: $[[ inputs.logo_url ]]
+  CONTAINER_TO_ANALYZE: $[[ inputs.container_to_analyze ]]
+  TRIVY_NO_PROGRESS: "true"
+  TRIVY_CACHE_DIR: ".trivycache/"
+
+
+include:
+  - local: /source/ast/_function_print_row.yml
+  - local: /source/ast/trivy_input_variables.yml
+
+
+🔬 trivy (dast):
+  image: $CONTAINER_IMAGE_TRIVY
+  stage: integration-test
+  services:
+    - name: $CONTAINER_IMAGE_TRIVY
+      alias: trivy-dind
+  allow_failure: true
+  before_script:
+    - |
+      git config --global --add safe.directory ${CI_PROJECT_DIR}
+      [ ! -z "${LOGO_URL}" ] && curl -s "${LOGO_URL}"
+    - !reference [.ast:_function_print_row]
+    - !reference [.ast:trivy_input_variables]
+  script:
+    - trivy image --exit-code 0 --severity HIGH $CONTAINER_TO_ANALYZE
+    - trivy image --exit-code 1 --severity CRITICAL $CONTAINER_TO_ANALYZE
+  cache:
+    paths:
+      - .trivycache/
